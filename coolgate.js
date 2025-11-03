@@ -15,7 +15,8 @@ const Closed = "CLOSED";
 const Closing = "CLOSING";
 const Open = "OPEN";
 const Opening = "OPENING";
-const HalfOpen = "HALF_OPEN";
+const OpeningStopped = "OPENING_STOPPED";
+const ClosingStopped = "CLOSING_STOPPED";
 const Unknown = "UNKNOWN";
 
 const _DoorState = Closed;
@@ -26,7 +27,7 @@ const openSensor = new Gpio(17, "in", "both"); // Correct pin for open sensor
 const closeSensor = new Gpio(18, "in", "both"); // Correct pin for close sensor
 
 // Init
-// relayModule.writeSync(0); // Relay module off
+relayModule.writeSync(0); // Relay module off
 
 openSensor.watch((err, value) => {
   if (err) {
@@ -80,6 +81,12 @@ app.post("/knock", checkAuth, (req, res) => {
   setTimeout(() => {
     relayModule.writeSync(0); // Deactivate relay after 500 milliseconds
   }, 500);
+
+  if (_DoorState === Closing) {
+    _DoorState = ClosingStopped;
+  } else if (_DoorState === Opening) {
+    _DoorState = OpeningStopped;
+  }
   res.json({ success: true });
 });
 

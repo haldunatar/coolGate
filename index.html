@@ -1,43 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Garage Door Animation</title>
+<style>
+  body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #eee;
+    font-family: sans-serif;
+    transition: background 1s ease-in-out;
+  }
 
-    <title>Pi-car DashBoard</title> 
-    <link href="https://fonts.googleapis.com/css?family=Lalezar" rel="stylesheet">
-    <link rel="stylesheet" href="static/css/styles.css">
-    <title>Pi-Car</title>
+  .garage {
+    width: 250px;
+    height: 200px;
+    border: 4px solid #333;
+    overflow: hidden;
+    position: relative;
+    background: #999;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+    border-radius: 6px;
+  }
+
+  .door {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background: #555;
+    transition: transform 8s ease-in-out, background 8s ease-in-out;
+    transform-origin: bottom;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+  }
+
+  /* Door states */
+  .closed {
+    transform: translateY(0%);
+  }
+
+  .half {
+    transform: translateY(-50%);
+  }
+
+  .open {
+    transform: translateY(-100%);
+  }
+
+  /* Panels effect */
+  .door::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 25%;
+    background: rgba(0,0,0,0.2);
+    top: 0;
+    border-bottom: 1px solid #333;
+    box-sizing: border-box;
+  }
+
+  .door::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 25%;
+    background: rgba(0,0,0,0.1);
+    bottom: 0;
+    border-top: 1px solid #333;
+    box-sizing: border-box;
+  }
+
+  button {
+    margin: 10px 5px 0 5px;
+    padding: 8px 12px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+</style>
 </head>
-
 <body>
-<section>
-    <div id="voiceCommand" class="speak">
-        Speak
-    </div>
 
-     <div class="engine-button">
-         Start
-     </div>
+<div>
+  <div class="garage">
+    <div class="door closed" id="door"></div>
+  </div>
+  <div style="text-align:center;">
+    <button onclick="setDoorState('closed')">Closed</button>
+    <button onclick="setDoorState('half')">Half Open</button>
+    <button onclick="setDoorState('open')">Open</button>
+  </div>
+</div>
 
-    <div class="directions">
-        <div class="direction-button direction-button--forward">
-            &#8593;
-        </div>
-        <div class="direction-button direction-button--left">
-            &#8592;
-        </div>
-        <div class="direction-button direction-button--back">
-            &#8595;
-        </div>
-        <div class="direction-button direction-button--right">
-            &#8594;
-        </div>
-    </div>
+<script>
+  const door = document.getElementById('door');
+  const body = document.body;
 
-</section>
- 
-<script src="static/js/dashboard.js"></script>
+  function setDoorState(state) {
+    door.classList.remove('closed', 'half', 'open');
+    door.classList.add(state);
+
+    // Change body background when door is open
+    if(state === 'open') {
+      body.style.background = '#fff';
+    } else {
+      body.style.background = '#eee';
+    }
+  }
+</script>
+
 </body>
 </html>
