@@ -98,17 +98,69 @@
   const door = document.getElementById('door');
   const body = document.body;
 
-  function setDoorState(state) {
-    door.classList.remove('closed', 'half', 'open');
-    door.classList.add(state);
+  function getApiKey() {
+    return localStorage.getItem('api_key') || '';
+  }
 
-    // Change body background when door is open
-    if(state === 'open') {
+  async function fetchDoorState() {
+    const apiKey = getApiKey();
+    try {
+      const res = await fetch('/doorState', {
+        method: 'GET',
+        headers: {
+          'x-api-key': apiKey,
+          'Accept': 'application/json'
+        }
+      });
+      if (!res.ok) {
+        console.error('Failed to fetch /doorState', res.status);
+        return;
+      }
+      const data = await res.json();
+      const state = data && data.doorState;
+      applyDoorStateFromApi(state);
+    } catch (err) {
+      console.error('Error fetching /doorState', err);
+    }
+  }
+
+  function applyDoorStateFromApi(apiState) {
+    if (!apiState) return;
+    const s = String(apiState).toUpperCase();
+    door.classList.remove('closed', 'half', 'open');
+    if (s === 'OPEN') {
+      door.classList.add('open');
       body.style.background = '#fff';
-    } else {
+    } else if (s === 'CLOSED') {
+      door.classList.add('closed');
+      body.style.background = '#eee';
+    } else if (s === 'HALF') {
+      door.classList.add('half');
       body.style.background = '#eee';
     }
   }
+
+  function setDoorState(state) {
+    const apiKey = getApiKey();
+    // Fire-and-forget knock call (response not required)
+    fetch('/knock', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json'
+      },
+      // optionally include desired state in body if your API supports it:
+      // body: JSON.stringify({ requestedState: state })
+    }).catch(err => console.error('knock request failed', err));
+
+    // After each knock call start a 15s timer then refresh door state
+    setTimeout(fetchDoorState, 15000);
+  }
+
+  // On page init/opening, request current door state
+  window.addEventListener('DOMContentLoaded', () => {
+    fetchDoorState();
+  });
 </script>
 
 </body>
