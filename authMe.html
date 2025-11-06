@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Authenticate</title>
+<style>
+  html,body { height:100%; margin:0; }
+  body {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#f3f4f6;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  }
+  .card {
+    width:min(420px,92vw);
+    padding:24px;
+    background:#fff;
+    border-radius:10px;
+    box-shadow:0 8px 30px rgba(2,6,23,0.08);
+    text-align:center;
+  }
+  input[type="text"]{
+    width:100%;
+    padding:12px 14px;
+    margin:12px 0;
+    border:1px solid #e5e7eb;
+    border-radius:8px;
+    font-size:16px;
+    box-sizing:border-box;
+  }
+  button {
+    appearance:none;
+    border:0;
+    background:linear-gradient(180deg,#06b6d4,#0891b2);
+    color:white;
+    padding:10px 16px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .msg { margin-top:12px; font-size:14px; }
+  .msg.error { color:#dc2626; }
+  .msg.ok { color:#059669; }
+</style>
+</head>
+<body>
+  <form class="card" id="authForm" novalidate>
+    <h2>Enter API Key</h2>
+    <input id="keyInput" type="text" placeholder="Paste key here" autocomplete="off" required />
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:6px;">
+      <button type="submit">Submit</button>
+    </div>
+    <div id="message" class="msg" aria-live="polite"></div>
+  </form>
+
+<script>
+  const form = document.getElementById('authForm');
+  const input = document.getElementById('keyInput');
+  const msg = document.getElementById('message');
+
+  function getStoredApiKey(){ return localStorage.getItem('api_key') || ''; }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.textContent = '';
+    msg.className = 'msg';
+
+    const enteredKey = (input.value || '').trim();
+    if (!enteredKey) {
+      msg.textContent = 'Please enter a key.';
+      msg.classList.add('error');
+      return;
+    }
+
+    const headerApiKey = getStoredApiKey();
+
+    try {
+      const res = await fetch('/authMe/key', {
+        method: 'POST',
+        headers: {
+          'x-api-key': headerApiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ key: enteredKey })
+      });
+
+      if (!res.ok) {
+        msg.textContent = `Server returned ${res.status}`;
+        msg.classList.add('error');
+        return;
+      }
+
+      const data = await res.json();
+      if (data && data.success === true) {
+        localStorage.setItem('api_key', enteredKey);
+        msg.textContent = 'Key saved.';
+        msg.classList.add('ok');
+      } else {
+        msg.textContent = 'Authentication failed.';
+        msg.classList.add('error');
+      }
+    } catch (err) {
+      console.error(err);
+      msg.textContent = 'Network error.';
+      msg.classList.add('error');
+    }
+  });
+</script>
