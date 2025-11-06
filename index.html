@@ -1,83 +1,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Garage Door Animation</title>
 <style>
+  /* Page layout */
   body {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
     background: #eee;
-    font-family: sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     transition: background 1s ease-in-out;
+    padding: 20px;
+    box-sizing: border-box;
   }
 
+  /* Garage scales to ~90% of viewport width and a taller height */
   .garage {
-    width: 250px;
-    height: 200px;
-    border: 4px solid #333;
+    width: 90vw;
+    max-width: 1100px;
+    height: 62vh;          /* a little longer/taller */
+    max-height: 900px;
+    min-height: 300px;
+    border: 5px solid #333;
     overflow: hidden;
     position: relative;
     background: #999;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
-    border-radius: 6px;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.35), 0 8px 30px rgba(0,0,0,0.12);
+    border-radius: 10px;
+    display: block;
   }
 
+  /* Door fills the garage and animates */
   .door {
     position: absolute;
     bottom: 0;
     width: 100%;
     height: 100%;
-    background: #555;
-    transition: transform 8s ease-in-out, background 8s ease-in-out;
+    background: linear-gradient(180deg,#4b4b4b,#2f2f2f);
+    transition: transform 8s ease-in-out, background 0.6s ease;
     transform-origin: bottom;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.35);
   }
 
   /* Door states */
-  .closed {
-    transform: translateY(0%);
-  }
+  .closed { transform: translateY(0%); }
+  .half   { transform: translateY(-50%); }
+  .open   { transform: translateY(-100%); }
 
-  .half {
-    transform: translateY(-50%);
-  }
-
-  .open {
-    transform: translateY(-100%);
-  }
-
-  /* Panels effect */
-  .door::before {
-    content: "";
-    position: absolute;
-    width: 100%;
-    height: 25%;
-    background: rgba(0,0,0,0.2);
-    top: 0;
-    border-bottom: 1px solid #333;
-    box-sizing: border-box;
-  }
-
+  /* Panel accents */
+  .door::before,
   .door::after {
     content: "";
     position: absolute;
     width: 100%;
     height: 25%;
-    background: rgba(0,0,0,0.1);
-    bottom: 0;
-    border-top: 1px solid #333;
+    left: 0;
     box-sizing: border-box;
   }
+  .door::before {
+    top: 0;
+    background: rgba(0,0,0,0.18);
+    border-bottom: 1px solid rgba(0,0,0,0.45);
+  }
+  .door::after {
+    bottom: 0;
+    background: rgba(255,255,255,0.03);
+    border-top: 1px solid rgba(255,255,255,0.03);
+  }
 
-  button {
-    margin: 10px 5px 0 5px;
-    padding: 8px 12px;
+  /* Controls container */
+  .controls {
+    text-align: center;
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  /* Buttons - more stylish */
+  .btn {
+    margin: 0;
+    padding: 12px 20px;
     font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(180deg,#5b6570,#2f3940);
+    border: 0;
+    border-radius: 999px;
     cursor: pointer;
+    box-shadow: 0 8px 20px rgba(16,24,40,0.12);
+    transition: transform .14s cubic-bezier(.2,.9,.2,1), box-shadow .14s ease, opacity .12s ease;
+    letter-spacing: 0.6px;
+  }
+
+  .btn:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 14px 36px rgba(16,24,40,0.16);
+  }
+
+  .btn:active {
+    transform: translateY(0) scale(.995);
+    opacity: .98;
+  }
+
+  .btn.close {
+    background: linear-gradient(180deg,#ff6b6b,#d64545);
+    box-shadow: 0 10px 26px rgba(220,50,50,0.14);
+  }
+
+  .btn.open {
+    background: linear-gradient(180deg,#34d399,#059669);
+    box-shadow: 0 10px 26px rgba(6,150,105,0.12);
+  }
+
+  .btn.secondary {
+    background: linear-gradient(180deg,#9aa6b2,#6b7882);
+    color: #fff;
+    box-shadow: 0 10px 26px rgba(80,90,100,0.10);
+  }
+
+  /* Make layout responsive on narrow screens */
+  @media (max-width: 600px) {
+    .garage { height: 55vh; }
+    .btn { padding: 10px 14px; font-size: 14px; }
   }
 </style>
 </head>
@@ -87,16 +139,18 @@
   <div class="garage">
     <div class="door closed" id="door"></div>
   </div>
-  <div style="text-align:center;">
-    <button onclick="setDoorState('closed')">Closed</button>
-    <button onclick="setDoorState('half')">Half Open</button>
-    <button onclick="setDoorState('open')">Open</button>
+
+  <div class="controls" style="max-width:90vw;margin:18px auto 0;">
+    <button class="btn close" onclick="setDoorState('CLOSED')">Closed</button>
+    <button class="btn secondary" onclick="setDoorState('HALF')">Half Open</button>
+    <button class="btn open" onclick="setDoorState('OPEN')">Open</button>
   </div>
 </div>
 
 <script>
   const door = document.getElementById('door');
   const body = document.body;
+  let knockTimer = null;
 
   function getApiKey() {
     return localStorage.getItem('api_key') || '';
@@ -136,12 +190,17 @@
       body.style.background = '#eee';
     } else if (s === 'HALF') {
       door.classList.add('half');
-      body.style.background = '#eee';
+      body.style.background = '#f5f5f5';
     }
   }
 
+  // Optimistic UI: apply immediately on click, then knock and refresh after 15s
   function setDoorState(state) {
     const apiKey = getApiKey();
+
+    // Apply optimistic UI change immediately (do not wait for server)
+    applyDoorStateFromApi(state);
+
     // Fire-and-forget knock call (response not required)
     fetch('/knock', {
       method: 'POST',
@@ -154,10 +213,16 @@
     }).catch(err => console.error('knock request failed', err));
 
     // After each knock call start a 15s timer then refresh door state
-    setTimeout(fetchDoorState, 15000);
+    if (knockTimer) {
+      clearTimeout(knockTimer);
+    }
+    knockTimer = setTimeout(() => {
+      fetchDoorState();
+      knockTimer = null;
+    }, 15000);
   }
 
-  // On page init/opening, request current door state
+  // On page init/opening, request current door state (will update UI when returned)
   window.addEventListener('DOMContentLoaded', () => {
     fetchDoorState();
   });
