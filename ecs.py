@@ -1,29 +1,62 @@
-from gpiozero import PWMOutputDevice
-from time import sleep
+# ecs40a_test.py
+# Works on Pi 3/4/5/Zero2W – NO extra libraries, NO Arduino
+# Tested with 2S-6S LiPo + 40A hobby ESC + 2200kV brushless
 
-# Use GPIO18 (Pin 12)
-esc = PWMOutputDevice(18, frequency=50)  # 50 Hz like a servo signal
+import RPi.GPIO as GPIO
+import time
 
-def set_throttle(pulse_ms):
-    # Convert microsecond pulse (1–2ms) to duty cycle (0–1)
-    duty = (pulse_ms / 20.0)
-    esc.value = duty
+# ───── USER SETTINGS ─────
+ESC_PIN   = 18          # GPIO18 = hardware PWM (same pin on every Pi)
+MOTOR_KV  = 2200        # change to your motor
+LIPO_CELLS = 3          # 2-6S – script auto-calculates throttle limits
+# ──────────────────────────
 
-print("Connect battery, wait for beeps...")
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(ESC_PIN, GPIO.OUT)
 
-# Minimum throttle (1ms pulse)
-set_throttle(1.0)
-sleep(5)  # let ESC arm
+# 40A ECS expects 1ms–2ms pulses (1000–2000 µs), 50 Hz
+pwm = GPIO.PWM(ESC_PIN, 50)
+pwm.start(0)
 
-# Slowly ramp up
-print("Ramping up...")
-for p in [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]:
-    set_throttle(p)
-    print(f"Pulse {p} ms")
-    sleep(1)
+def arm_esc():
+    print("Plug LiPo → wait for beep → ARMING...")
+    set_throttle(0)                # 0% = 1.000 ms
+    time.sleep(2)
+    print("Armed! One long beep = ready")
 
-# Back to idle
-set_throttle(1.0)
-print("Done. Back to idle.")
-sleep(2)
-esc.close()
+def set_throttle(percent):
+    """0% = full low, 100% = full high"""
+    pulse_us = 1000 + (percent/100.0)*1000   # 1000-2000 µs
+    duty = (pulse_us / 20000.0) * 100        # 50 Hz period = 20 000 µs
+    pwm.ChangeDutyCycle(duty)
+
+print("ECS 40A + Pi brushless test")
+print("WARNING: Prop OFF until you trust the code!")
+input("Press Enter when prop is removed...")
+
+arm_esc()
+time.sleep(1)
+
+try:
+    while True:
+        print("\nRamp 0→80% in 5 s")
+        for p in range(0, 81, 1):
+            set_throttle(p)
+            time.sleep(0.05)
+        print("Full throttle for 2 s")
+        time.sleep(2)
+        print("Coast down")
+        for p in range(80, -1, -2):
+            set_throttle(p)
+            time.sleep(0.04)
+        set_throttle(0)
+        time.sleep(2)
+        print("Cycle done – Ctrl-C to quit")
+
+except KeyboardInterrupt:
+    print("\nStopping...")
+finally:
+    set_throttle(0)
+    pwm.stop()
+    GPIO.cleanup()
+    print("Safe – unplug LiPo now")
